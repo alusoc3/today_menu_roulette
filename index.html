@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>献立ルーレット</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background-color: #fff9f0;
+            color: #333;
+            margin-top: 30px;
+        }
+        h1 {
+            color: #e67e22;
+        }
+        .card {
+            background: white;
+            max-width: 520px;
+            margin: 15px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+        .menu-item {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            background: #fafafa;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            position: relative;
+        }
+        /* キープ中のスタイル */
+        .menu-item.kept {
+            border: 2px solid #27ae60;
+            background: #f4faf6;
+        }
+        /* 非表示時のスタイル */
+        .menu-item.disabled-item {
+            opacity: 0.5;
+            background: #f0f0f0;
+        }
+        /* 料理のサムネイル画像スタイル */
+        .menu-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-right: 15px;
+            background-color: #ddd;
+            flex-shrink: 0;
+        }
+        .menu-info {
+            flex-grow: 1;
+        }
+        .label-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .label {
+            font-weight: bold;
+            color: #d35400;
+            font-size: 14px;
+        }
+        .section-title {
+            font-weight: bold;
+            color: #d35400;
+            font-size: 15px;
+            margin-bottom: 10px;
+            display: block;
+            border-bottom: 2px solid #ffe0b2;
+            padding-bottom: 5px;
+        }
+        /* ボタンまわり */
+        .button-group {
+            display: flex;
+            gap: 6px;
+        }
+        .keep-btn, .toggle-btn {
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: none;
+            margin-top: 0;
+            transition: 0.2s;
+        }
+        .keep-btn:hover, .toggle-btn:hover {
+            transform: scale(1.05);
+            background-color: #7f8c8d;
+        }
+        .keep-btn:disabled, .toggle-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .menu-item.kept .keep-btn {
+            background-color: #27ae60;
+        }
+        .toggle-btn.active {
+            background-color: #e67e22;
+        }
+        .toggle-btn.active:hover {
+            background-color: #d35400;
+        }
+        .dish-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        /* レシピ検索ボタンのスタイル */
+        .recipe-link {
+            display: inline-block;
+            font-size: 13px;
+            color: #e67e22;
+            text-decoration: none;
+            background: #fff3e0;
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid #ffe0b2;
+            transition: 0.2s;
+        }
+        .recipe-link:hover {
+            background: #e67e22;
+            color: white;
+        }
+        
+        /* 🌟 立体感・押し込み感のあるルーレットボタンのスタイル */
+        #spin-btn {
+            background: linear-gradient(to bottom, #f39c12, #d35400);
+            color: white;
+            border: none;
+            padding: 16px 36px;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-radius: 35px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #963d00, 0 10px 15px rgba(0,0,0,0.2);
+            transition: all 0.1s ease;
+            margin-top: 15px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        #spin-btn:hover {
+            background: linear-gradient(to bottom, #f5b041, #e67e22);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 #963d00, 0 12px 20px rgba(0,0,0,0.25);
+        }
+        #spin-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #963d00, 0 4px 8px rgba(0,0,0,0.2);
+        }
+        #spin-btn:disabled {
+            background: linear-gradient(to bottom, #bdc3c7, #95a5a6);
+            cursor: not-allowed;
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #7f8c8d, 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: none;
+        }
+
+        .checkbox-group label {
+            display: inline-block;
+            margin-right: 12px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .sub-group {
+            margin-bottom: 0;
+            background: #fffaf0;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ffe0b2;
+        }
+        .radio-options {
+            margin-bottom: 10px;
+        }
+        .radio-options label {
+            margin-right: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .expandable-options {
+            display: none;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #ffd180;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍽️ 本日の献立ルーレット 🍽️</h1>
+    <p>ボタンを押して今日のメニューを決めよう！お気に入りはキープできます。</p>
+
+    <!-- 除外設定カード -->
+    <div class="card checkbox-group">
+        
+        <!-- アレルギー・避けたい食材セクション（29品目対応） -->
+        <div class="sub-group">
+            <span class="section-title">🛡️ アレルギー・避けたい食材の除外（29品目）</span>
+            <div class="radio-options">
+                <label><input type="radio" name="allergy-choice" value="none" checked onchange="toggleGroup()"> なし</label>
+                <label><input type="radio" name="allergy-choice" value="exist" onchange="toggleGroup()"> あり</label>
+                <p style="color: red; font-size: 13px; margin-top: 8px; line-height: 1.6;">
+    ※選択されたものがレシピに入ってしまうことが稀にありますが、入っていないものが多数ですので、もし入ってしまった場合は入っていないものを選択するようお願いします！
+</p>
+            </div>
+            <div id="allergy-options" class="expandable-options">
+                <label><input type="checkbox" name="exclude" value="egg"> 卵</label>
+                <label><input type="checkbox" name="exclude" value="milk"> 乳</label>
+                <label><input type="checkbox" name="exclude" value="wheat"> 小麦</label>
+                <label><input type="checkbox" name="exclude" value="soba"> そば</label>
+                <label><input type="checkbox" name="exclude" value="peanut"> 落花生(ピーナッツ)</label>
+                <label><input type="checkbox" name="exclude" value="ebi"> えび</label>
+                <label><input type="checkbox" name="exclude" value="kani"> かに</label>
+                <label><input type="checkbox" name="exclude" value="walnut"> くるみ</label>
+                <label><input type="checkbox" name="exclude" value="cashewnuts"> カシューナッツ</label>
+                <label><input type="checkbox" name="exclude" value="almond"> アーモンド</label>
+                <label><input type="checkbox" name="exclude" value="awabi"> あわび</label>
+                <label><input type="checkbox" name="exclude" value="ika"> いか</label>
+                <label><input type="checkbox" name="exclude" value="ikura"> いくら</label>
+                <label><input type="checkbox" name="exclude" value="orange"> オレンジ</label>
+                <label><input type="checkbox" name="exclude" value="kiwi"> キウイフルーツ</label>
+                <label><input type="checkbox" name="exclude" value="beef"> 牛肉</label>
+                <label><input type="checkbox" name="exclude" value="goma"> ごま</label>
+                <label><input type="checkbox" name="exclude" value="sake"> さけ</label>
+                <label><input type="checkbox" name="exclude" value="saba"> さば</label>
+                <label><input type="checkbox" name="exclude" value="daizu"> 大豆</label>
+                <label><input type="checkbox" name="exclude" value="chicken"> 鶏肉</label>
+                <label><input type="checkbox" name="exclude" value="banana"> バナナ</label>
+                <label><input type="checkbox" name="exclude" value="pistachio"> ピスタチオ</label>
+                <label><input type="checkbox" name="exclude" value="pork"> 豚肉</label>
+                <label><input type="checkbox" name="exclude" value="macadamianuts"> マカダミアナッツ</label>
+                <label><input type="checkbox" name="exclude" value="momo"> もも</label>
+                <label><input type="checkbox" name="exclude" value="yamaimo"> やまいも</label>
+                <label><input type="checkbox" name="exclude" value="ringo"> りんご</label>
+                <label><input type="checkbox" name="exclude" value="gelatin"> ゼラチン</label>
+            </div>
+        </div>
+
+    </div>
+
+    <button id="spin-btn" onclick="spinRoulette()">ルーレットを回す！</button>
+
+    <!-- 結果表示カード -->
+    <div class="card">
+        <!-- 主菜 -->
+        <div id="main-container" class="menu-item">
+            <img id="main-img" class="menu-img" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200" alt="主菜画像">
+            <div class="menu-info">
+                <div class="label-container">
+                    <span class="label">【主菜】</span>
+                    <div class="button-group">
+                        <button class="toggle-btn active" onclick="toggleDisplay('main')">表示: ON</button>
+                        <button class="keep-btn" onclick="toggleKeep('main')" disabled>🔒 キープ</button>
+                    </div>
+                </div>
+                <div id="main-result" class="dish-name">ここに表示されます</div>
+                <a id="main-recipe" class="recipe-link" href="#" target="_blank" style="display:none;">🍳 クックパッドで検索</a>
+            </div>
+        </div>
+
+        <!-- 副菜 -->
+        <div id="side-container" class="menu-item">
+            <img id="side-img" class="menu-img" src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200" alt="副菜画像">
+            <div class="menu-info">
+                <div class="label-container">
+                    <span class="label">【副菜】</span>
+                    <div class="button-group">
+                        <button class="toggle-btn active" onclick="toggleDisplay('side')">表示: ON</button>
+                        <button class="keep-btn" onclick="toggleKeep('side')" disabled>🔒 キープ</button>
+                    </div>
+                </div>
+                <div id="side-result" class="dish-name">ここに表示されます</div>
+                <a id="side-recipe" class="recipe-link" href="#" target="_blank" style="display:none;">🍳 クックパッドで検索</a>
+            </div>
+        </div>
+
+        <!-- デザート -->
+        <div id="dessert-container" class="menu-item">
+            <img id="dessert-img" class="menu-img" src="https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=200" alt="デザート画像">
+            <div class="menu-info">
+                <div class="label-container">
+                    <span class="label">【デザート】</span>
+                    <div class="button-group">
+                        <button class="toggle-btn active" onclick="toggleDisplay('dessert')">表示: ON</button>
+                        <button class="keep-btn" onclick="toggleKeep('dessert')" disabled>🔒 キープ</button>
+                    </div>
+                </div>
+                <div id="dessert-result" class="dish-name">ここに表示されます</div>
+                <a id="dessert-recipe" class="recipe-link" href="#" target="_blank" style="display:none;">🍳 クックパッドで検索</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fallbackImg = "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=200";
+
+        const mainDishes = [
+            { name: "鶏の唐揚げ", img: "karaage.jpg" },
+            { name: "豚の生姜焼き", img: "bu.jpg" },
+            { name: "ハンバーグ", img: "han.jpg" },
+            { name: "鮭の塩焼き", img: "sha.jpeg" },
+            { name: "麻婆豆腐", img: "ma.jpg" },
+            { name: "サバの味噌煮", img: "sab.jpg" },
+            { name: "オムライス", img: "omu.jpg" },
+            { name: "牛丼", img: "gyu.jpg" },
+            { name: "チキンカツ", img: "chi.png" },
+            { name: "豚キムチ炒め", img: "buaa.jpeg" },
+            { name: "エビチリ", img: "eb.jpg" },
+            { name: "肉じゃが", img: "niku.jpg" },
+            { name: "回鍋肉", img: "hoi.jpg" },
+            { name: "焼き魚（ホッケ）", img: "hok.jpg" },
+            { name: "ピーマンの肉詰め", img: "pi.jpg" },
+            { name: "グラタン", img: "gu.jpg" },
+            { name: "チンジャオロース", img: "tinj.jpg" },
+            { name: "アジフライ", img: "azi.jpg" },
+            { name: "カレイの煮付け", img: "ka.jpg" },
+            { name: "ポークチャップ", img: "po.jpeg" }
+        ];
+        
+        const sideDishes = [
+            { name: "ほうれん草のお浸し", img: "hooo.png" },
+            { name: "きゅうりとタコの酢の物", img: "takiooo.jpg" },
+            { name: "冷や奴", img: "hi.jpg" },
+            { name: "ポテトサラダ", img: "pol.jpeg" },
+            { name: "ひじきの煮物", img: "hiii.jpg" },
+            { name: "トマトとモッツァレラのサラダ", img: "tooo.png" },
+            { name: "きんぴらごぼう", img: "kin.jpg" },
+            { name: "かぼちゃの煮物", img: "kab.jpg" },
+            { name: "ブロッコリーの和え物", img: "but.jpg" },
+            { name: "もずく酢", img: "mamam.jpeg" },
+            { name: "冷やしトマト", img: "hiy.jpg" },
+            { name: "キャベツの千切りサラダ", img: "ky.jpg" },
+            { name: "切り干し大根", img: "kiiii.png" },
+            { name: "ナスビの揚げ浸し", img: "nas.jpeg" },
+            { name: "コールスロー", img: "koomd.jpeg" },
+            { name: "枝豆", img: "ed.jpg" },
+            { name: "ちくわの磯辺揚げ", img: "tik.jpg" },
+            { name: "無限ピーマン", img: "mu.jpg" },
+            { name: "厚揚げのそぼろあんかけ", img: "at.jpg" },
+            { name: "たたききゅうり", img: "ta.jpg" }
+        ];
+        
+        const desserts = [
+            { name: "バニラアイス", img: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=200" },
+            { name: "ヨーグルト", img: "yoguruto.jpg" },
+            { name: "プリン", img: "p.jpg" },
+            { name: "季節のフルーツ", img: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=200" },
+            { name: "チーズケーキ", img: "ti.jpg" },
+            { name: "シュークリーム", img: "shukuri-mu.jpg" },
+            { name: "チョコレートケーキ", img: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=200" },
+            { name: "パンナコッタ", img: "pannakotta.jpg" },
+            { name: "クッキー", img: "ku.jpg" },
+            { name: "水ようかん", img: "mz.jpg" },
+            { name: "抹茶アイス", img: "m.jpg" },
+            { name: "エクレア", img: "e.jpg" },
+            { name: "アップルパイ", img: "a.jpg" },
+            { name: "フルーツゼリー", img: "huru.jpg" },
+            { name: "カステラ", img: "kasutera.jpg" },
+            { name: "ワッフル", img: "https://images.unsplash.com/photo-1562376552-0d160a2f238d?w=200" },
+            { name: "スイートポテト", img: "sui.jpg" },
+            { name: "タルト", img: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=200" },
+            { name: "ティラミス", img: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=200" },
+            { name: "杏仁豆腐", img: "annin.jpg" },
+        ];
+
+        let recentMains = [];
+        let recentSides = [];
+        let recentDesserts = [];
+        const historyLimit = 3;
+
+        let keepState = {
+            main: false,
+            side: false,
+            dessert: false
+        };
+
+        let displayState = {
+            main: true,
+            side: true,
+            dessert: true
+        };
+
+        // 料理ごとのアレルギー食材
+// 食材のキーはチェックボックスの value と対応
+const dishAllergens = {
+    // 主菜
+    "鶏の唐揚げ": ["chicken", "wheat", "daizu", "egg"],
+    "豚の生姜焼き": ["pork", "wheat", "daizu"],
+    "ハンバーグ": ["beef", "pork", "egg", "milk", "wheat"],
+    "鮭の塩焼き": ["sake"],
+    "麻婆豆腐": ["daizu", "pork", "wheat", "goma"],
+    "サバの味噌煮": ["saba", "daizu", "wheat"],
+    "オムライス": ["egg", "chicken", "milk"],
+    "牛丼": ["beef", "wheat", "daizu"],
+    "チキンカツ": ["chicken", "egg", "wheat", "milk"],
+    "豚キムチ炒め": ["pork", "daizu", "wheat", "goma"],
+    "エビチリ": ["ebi", "wheat", "daizu"],
+    "肉じゃが": ["beef", "daizu", "wheat"],
+    "回鍋肉": ["pork", "daizu", "wheat", "goma"],
+    "焼き魚（ホッケ）": [],
+    "ピーマンの肉詰め": ["pork", "beef", "egg", "wheat", "milk"],
+    "グラタン": ["milk", "wheat", "chicken", "egg"],
+    "チンジャオロース": ["beef", "daizu", "wheat"],
+    "アジフライ": ["egg", "wheat", "milk"],
+    "カレイの煮付け": ["wheat", "daizu"],
+    "ポークチャップ": ["pork", "wheat", "daizu"],
+
+    // 副菜
+    "ほうれん草のお浸し": ["daizu", "wheat"],
+    "きゅうりとタコの酢の物": [],
+    "冷や奴": ["daizu"],
+    "ポテトサラダ": ["egg", "milk"],
+    "ひじきの煮物": ["daizu", "wheat"],
+    "トマトとモッツァレラのサラダ": ["milk"],
+    "きんぴらごぼう": ["daizu", "wheat", "goma"],
+    "かぼちゃの煮物": ["daizu", "wheat"],
+    "ブロッコリーの和え物": ["egg", "milk", "goma", "daizu"],
+    "もずく酢": [],
+    "冷やしトマト": [],
+    "キャベツの千切りサラダ": ["egg", "milk", "daizu"],
+    "切り干し大根": ["daizu", "wheat"],
+    "ナスビの揚げ浸し": ["daizu", "wheat"],
+    "コールスロー": ["egg", "milk"],
+    "枝豆": ["daizu"],
+    "ちくわの磯辺揚げ": ["wheat", "egg", "milk"],
+    "無限ピーマン": ["goma", "daizu"],
+    "厚揚げのそぼろあんかけ": [
+        "daizu", "beef", "pork", "chicken", "wheat"
+    ],
+    "たたききゅうり": ["goma", "daizu"],
+
+    // デザート
+    "バニラアイス": ["milk", "egg"],
+    "ヨーグルト": ["milk"],
+    "プリン": ["egg", "milk"],
+    "季節のフルーツ": [],
+    "チーズケーキ": ["milk", "egg", "wheat"],
+    "シュークリーム": ["egg", "milk", "wheat"],
+    "チョコレートケーキ": ["egg", "milk", "wheat", "daizu"],
+    "パンナコッタ": ["milk", "gelatin"],
+    "クッキー": ["wheat", "egg", "milk"],
+    "水ようかん": [],
+    "抹茶アイス": ["milk", "egg"],
+    "エクレア": ["egg", "milk", "wheat"],
+    "アップルパイ": ["ringo", "wheat", "egg", "milk"],
+    "フルーツゼリー": ["gelatin"],
+    "カステラ": ["egg", "wheat"],
+    "ワッフル": ["wheat", "egg", "milk"],
+    "スイートポテト": ["egg", "milk"],
+    "タルト": ["wheat", "egg", "milk"],
+    "ティラミス": ["egg", "milk", "wheat"],
+    "杏仁豆腐": ["milk"]
+};
+
+        function setImageSrc(imgElement, src) {
+            imgElement.onerror = function() {
+                this.src = fallbackImg;
+            };
+            imgElement.src = src;
+        }
+
+        function toggleGroup() {
+            const selectedChoice = document.querySelector('input[name="allergy-choice"]:checked').value;
+            const optionsDiv = document.getElementById("allergy-options");
+
+            if (selectedChoice === "exist") {
+                optionsDiv.style.display = "block";
+            } else {
+                optionsDiv.style.display = "none";
+                const checkboxes = optionsDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => cb.checked = false);
+            }
+        }
+
+        function getRandomItem(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function toggleKeep(type) {
+            if (!displayState[type]) return;
+            keepState[type] = !keepState[type];
+            const container = document.getElementById(`${type}-container`);
+            const btn = container.querySelector('.keep-btn');
+
+            if (keepState[type]) {
+                container.classList.add('kept');
+                btn.innerText = "🔓 解除";
+            } else {
+                container.classList.remove('kept');
+                btn.innerText = "🔒 キープ";
+            }
+        }
+
+        function toggleDisplay(type) {
+            displayState[type] = !displayState[type];
+            const container = document.getElementById(`${type}-container`);
+            const toggleBtn = container.querySelector('.toggle-btn');
+            const keepBtn = container.querySelector('.keep-btn');
+            const resultEl = document.getElementById(`${type}-result`);
+            const recipeEl = document.getElementById(`${type}-recipe`);
+            const imgEl = document.getElementById(`${type}-img`);
+
+            if (displayState[type]) {
+                container.classList.remove('disabled-item');
+                toggleBtn.innerText = "表示: ON";
+                toggleBtn.classList.add('active');
+                resultEl.innerText = "ここに表示されます";
+                keepBtn.disabled = true; // ONにした直後は「ここに表示されます」なので無効のまま
+            } else {
+                container.classList.add('disabled-item');
+                toggleBtn.innerText = "表示: OFF";
+                toggleBtn.classList.remove('active');
+                
+                if (keepState[type]) {
+                    toggleKeep(type);
+                }
+                keepBtn.disabled = true;
+
+                const labels = { main: "主菜なし", side: "副菜なし", dessert: "デザートなし" };
+                resultEl.innerText = labels[type];
+                recipeEl.style.display = "none";
+                imgEl.src = fallbackImg;
+            }
+        }
+
+        function spinRoulette() {
+            const btn = document.getElementById("spin-btn");
+            const mainEl = document.getElementById("main-result");
+            const sideEl = document.getElementById("side-result");
+            const dessertEl = document.getElementById("dessert-result");
+
+            const mainImg = document.getElementById("main-img");
+            const sideImg = document.getElementById("side-img");
+            const dessertImg = document.getElementById("dessert-img");
+
+            const mainRecipe = document.getElementById("main-recipe");
+            const sideRecipe = document.getElementById("side-recipe");
+            const dessertRecipe = document.getElementById("dessert-recipe");
+
+            const mainKeepBtn = document.querySelector('#main-container .keep-btn');
+            const sideKeepBtn = document.querySelector('#side-container .keep-btn');
+            const dessertKeepBtn = document.querySelector('#dessert-container .keep-btn');
+
+            const checkedBoxes = document.querySelectorAll(
+    'input[name="exclude"]:checked'
+);
+
+const selectedAllergens = Array.from(checkedBoxes)
+    .map(cb => cb.value);
+
+function isSafe(item) {
+    const allergens = dishAllergens[item.name] || [];
+
+    // 選択されたアレルギー食材が1つでも含まれていたら除外
+    return !allergens.some(allergen =>
+        selectedAllergens.includes(allergen)
+    );
+}
+
+const availableMain = mainDishes.filter(isSafe);
+const availableSide = sideDishes.filter(isSafe);
+const availableDessert = desserts.filter(isSafe);
+
+            if ((displayState.main && availableMain.length === 0) || 
+                (displayState.side && availableSide.length === 0) || 
+                (displayState.dessert && availableDessert.length === 0)) {
+                alert("除外条件に該当しすぎて選べる料理がなくなってしまいました！条件を減らしてください。");
+                return;
+            }
+
+            let candidatesMain = availableMain.filter(item => !recentMains.includes(item.name));
+            let candidatesSide = availableSide.filter(item => !recentSides.includes(item.name));
+            let candidatesDessert = availableDessert.filter(item => !recentDesserts.includes(item.name));
+
+            if (candidatesMain.length === 0) candidatesMain = availableMain;
+            if (candidatesSide.length === 0) candidatesSide = availableSide;
+            if (candidatesDessert.length === 0) candidatesDessert = availableDessert;
+
+            btn.disabled = true;
+
+            let count = 0;
+            const maxCount = 20; 
+
+            const interval = setInterval(() => {
+                if (displayState.main && !keepState.main) {
+                    const tempMain = getRandomItem(availableMain);
+                    mainEl.innerText = tempMain.name;
+                    setImageSrc(mainImg, tempMain.img);
+                }
+                if (displayState.side && !keepState.side) {
+                    const tempSide = getRandomItem(availableSide);
+                    sideEl.innerText = tempSide.name;
+                    setImageSrc(sideImg, tempSide.img);
+                }
+                if (displayState.dessert && !keepState.dessert) {
+                    const tempDessert = getRandomItem(availableDessert);
+                    dessertEl.innerText = tempDessert.name;
+                    setImageSrc(dessertImg, tempDessert.img);
+                }
+
+                count++;
+
+                if (count >= maxCount) {
+                    clearInterval(interval);
+
+                    if (displayState.main && !keepState.main) {
+                        let chosenMain = getRandomItem(candidatesMain);
+                        recentMains.push(chosenMain.name);
+                        if (recentMains.length > historyLimit) recentMains.shift();
+
+                        mainEl.innerText = chosenMain.name;
+                        setImageSrc(mainImg, chosenMain.img);
+                        mainRecipe.href = `https://cookpad.com/search/${encodeURIComponent(chosenMain.name)}`;
+                        mainRecipe.style.display = "inline-block";
+                    }
+                    if (displayState.main) {
+                        mainKeepBtn.disabled = false; // 料理が決まったらキープボタンを有効化
+                    }
+
+                    if (displayState.side && !keepState.side) {
+                        let chosenSide = getRandomItem(candidatesSide);
+                        recentSides.push(chosenSide.name);
+                        if (recentSides.length > historyLimit) recentSides.shift();
+
+                        sideEl.innerText = chosenSide.name;
+                        setImageSrc(sideImg, chosenSide.img);
+                        sideRecipe.href = `https://cookpad.com/search/${encodeURIComponent(chosenSide.name)}`;
+                        sideRecipe.style.display = "inline-block";
+                    }
+                    if (displayState.side) {
+                        sideKeepBtn.disabled = false;
+                    }
+
+                    if (displayState.dessert && !keepState.dessert) {
+                        let chosenDessert = getRandomItem(candidatesDessert);
+                        recentDesserts.push(chosenDessert.name);
+                        if (recentDesserts.length > historyLimit) recentDesserts.shift();
+
+                        dessertEl.innerText = chosenDessert.name;
+                        setImageSrc(dessertImg, chosenDessert.img);
+                        dessertRecipe.href = `https://cookpad.com/search/${encodeURIComponent(chosenDessert.name)}`;
+                        dessertRecipe.style.display = "inline-block";
+                    }
+                    if (displayState.dessert) {
+                        dessertKeepBtn.disabled = false;
+                    }
+
+                    btn.disabled = false;
+                }
+            }, 80);
+        }
+    </script>
+
+</body>
+</html>
